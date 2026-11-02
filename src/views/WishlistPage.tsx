@@ -136,10 +136,26 @@ export const WishlistPage: React.FC<WishlistPageProps> = ({
                                                 <span className="font-chakra text-xs sm:text-sm text-[#111111]">
                                                     {formatPrice(product.price)}
                                                 </span>
-                                                {product.originalPrice && (
-                                                    <span className="font-chakra text-[11px] text-gray-300 line-through">
-                                                        {formatPrice(product.originalPrice)}
-                                                    </span>
+                                                {product.salePrice !== undefined && product.salePrice < product.price ? (
+                                                    <>
+                                                        <span className="font-chakra text-xs sm:text-sm text-[#E5003B] font-semibold">
+                                                            {formatPrice(product.salePrice)}
+                                                        </span>
+                                                        <span className="font-chakra text-[11px] text-gray-400 line-through">
+                                                            {formatPrice(product.price)}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="font-chakra text-xs sm:text-sm text-[#111111]">
+                                                            {formatPrice(product.price)}
+                                                        </span>
+                                                        {product.originalPrice && product.originalPrice > product.price && (
+                                                            <span className="font-chakra text-[11px] text-gray-300 line-through">
+                                                                {formatPrice(product.originalPrice)}
+                                                            </span>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
 

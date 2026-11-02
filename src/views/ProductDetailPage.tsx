@@ -298,7 +298,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                         {/* Price */}
                         <div className="flex items-baseline gap-3">
-                            {product.salePrice !== undefined ? (
+                            {product.salePrice !== undefined && product.salePrice < product.price ? (
                                 <>
                                     <span className="font-chakra text-lg text-[#E5003B] font-semibold">
                                         Rs {product.salePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
@@ -312,7 +312,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                                     <span className="font-chakra text-lg text-[#111111]">
                                         Rs {product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
                                     </span>
-                                    {product.originalPrice && (
+                                    {product.originalPrice && product.originalPrice > product.price && (
                                         <span className="font-chakra text-sm text-gray-400 line-through">
                                             Rs {product.originalPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
                                         </span>

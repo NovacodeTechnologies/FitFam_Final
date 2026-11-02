@@ -73,7 +73,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Price — hidden on hover on desktop */}
           <div className="flex items-baseline justify-center gap-2 md:group-hover:hidden">
-            {salePrice !== undefined ? (
+            {salePrice !== undefined && salePrice < price ? (
               <>
                 <span className="font-chakra font-normal text-[12px] text-[#E5003B] tracking-wider font-semibold">
                   {formatPrice(salePrice)}
@@ -87,7 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <span className="font-chakra font-normal text-[12px] text-gray-700 tracking-wider">
                   {formatPrice(price)}
                 </span>
-                {originalPrice && (
+                {originalPrice && originalPrice > price && (
                   <span className="font-chakra text-[11px] text-gray-400 line-through">
                     {formatPrice(originalPrice)}
                   </span>
