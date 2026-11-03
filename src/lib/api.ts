@@ -31,6 +31,7 @@ api.interceptors.request.use(
 
 export function fixImageUrl(url: string, width = 800): string {
   if (!url) return url;
+  const w = width > 0 ? width : 800;
   let fixed = url
     .replace("http://localhost:8080", BASE_URL)
     .replace("https://kangaroo-elude-reshape.ngrok-free.dev", BASE_URL);
@@ -40,7 +41,7 @@ export function fixImageUrl(url: string, width = 800): string {
     if (!fixed.includes("f_auto")) {
       fixed = fixed.replace(
         "/image/upload/",
-        `/image/upload/f_auto,q_auto,w_${width},c_limit/`
+        `/image/upload/f_auto,q_auto,w_${w},c_limit/`
       );
     }
   }
