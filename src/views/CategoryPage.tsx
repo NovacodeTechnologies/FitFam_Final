@@ -52,7 +52,10 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
   }, [categoryId, subCategory]);
 
   const key = (categoryId ?? '').toLowerCase() as CategoryKey;
-  const meta = categoryMeta[key];
+  const meta = categoryMeta[key] || (categoryId ? {
+    label: decodeURIComponent(categoryId).charAt(0).toUpperCase() + decodeURIComponent(categoryId).slice(1),
+    productKey: decodeURIComponent(categoryId),
+  } : null);
 
   if (!meta) {
     return (
@@ -75,7 +78,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
   const decodedSubCategory = subCategory ? decodeURIComponent(subCategory) : null;
 
   const categoryProducts = products.filter((p) => {
-    const matchesCategory = p.category === meta.productKey;
+    const matchesCategory = p.category?.toLowerCase() === meta.productKey?.toLowerCase();
     const matchesClothing = !clothingType || (p as any).clothingType === clothingType;
     if (!decodedSubCategory) return matchesCategory && matchesClothing;
 
