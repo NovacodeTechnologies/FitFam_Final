@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Share2, ShoppingBag, X, Ruler, Plus, Minus, Zap } from 'lucide-react';
+import { ChevronRight, Share2, ShoppingBag, X, Ruler, Plus, Minus, Zap, Info } from 'lucide-react';
 import { Product } from '../data/products';
 import { ProductCard } from '../components/ui/ProductCard';
 import { Footer } from '../components/layout/Footer';
@@ -79,31 +79,72 @@ function getChartType(subCategory?: string): keyof typeof SIZE_CHARTS | null {
     return 'tops';
 }
 
-// ── Size Chart Modal ──────────────────────────────────────────────────────
+// Size Chart Modal (Dynamic Admin Library + Custom Override + Fallback)
 function SizeChartModal({
     isOpen,
     onClose,
-    subCategory,
+    product,
 }: {
     isOpen: boolean;
     onClose: () => void;
-    subCategory?: string;
+    product?: Product;
 }) {
-    const chartType = getChartType(subCategory);
-    const chart = chartType ? SIZE_CHARTS[chartType] : null;
-    if (!isOpen || !chart) return null;
+    if (!isOpen || !product) return null;
+
+    // 1. Determine active size chart source
+    let title = "Size Chart";
+    let columns: string[] = [];
+    let rows: any[] = [];
+    let notes: string | undefined = undefined;
+    let unit: string | undefined = undefined;
+
+    if (product.customSizeGuide?.enabled && product.customSizeGuide.columns?.length) {
+        title = `${product.name} Custom Size Chart`;
+        columns = product.customSizeGuide.columns;
+        rows = product.customSizeGuide.rows || [];
+        notes = product.customSizeGuide.measurementNotes;
+        unit = product.customSizeGuide.unit;
+    } else if (product.sizeGuide && typeof product.sizeGuide === 'object' && product.sizeGuide.columns?.length) {
+        title = product.sizeGuide.name || "Size Guide";
+        columns = product.sizeGuide.columns;
+        rows = product.sizeGuide.rows || [];
+        notes = product.sizeGuide.measurementNotes;
+        unit = product.sizeGuide.unit;
+    } else {
+        const chartType = getChartType((product as any).subCategory);
+        const fallback = chartType ? SIZE_CHARTS[chartType] : SIZE_CHARTS.tops;
+        title = fallback.title;
+        columns = fallback.columns;
+        rows = fallback.rows;
+    }
+
+    // Normalize rows to arrays of cell values matching columns
+    const normalizedRows: string[][] = rows.map((r: any) => {
+        if (Array.isArray(r)) return r.map((c) => String(c ?? ""));
+        if (typeof r === 'object' && r !== null) {
+            return columns.map((col) => String(r[col] ?? "-"));
+        }
+        return [];
+    });
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-            <div className="relative bg-white w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="relative bg-white w-full max-w-lg shadow-2xl overflow-hidden border border-gray-100">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
                     <div>
-                        <h3 className="font-chakra font-normal text-[11px] uppercase tracking-[0.3em] text-[#111111]">
-                            Size Chart
-                        </h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-chakra font-normal text-[11px] uppercase tracking-[0.3em] text-[#111111]">
+                                Size Chart
+                            </h3>
+                            {unit && (
+                                <span className="border border-gray-200 px-1.5 py-0.5 text-[8px] uppercase tracking-wider font-chakra text-gray-500">
+                                    {unit === 'both' ? 'IN / CM' : unit.toUpperCase()}
+                                </span>
+                            )}
+                        </div>
                         <p className="font-chakra font-normal text-[10px] uppercase tracking-[0.2em] text-gray-400 mt-0.5">
-                            {chart.title}
+                            {title}
                         </p>
                     </div>
                     <button
@@ -117,7 +158,7 @@ function SizeChartModal({
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-[#111111] text-white">
-                                {chart.columns.map((col, i) => (
+                                {columns.map((col, i) => (
                                     <th
                                         key={col}
                                         className={`py-3 px-4 font-chakra font-normal text-[9px] uppercase tracking-[0.3em] ${i === 0 ? 'text-left' : 'text-center'}`}
@@ -128,9 +169,9 @@ function SizeChartModal({
                             </tr>
                         </thead>
                         <tbody>
-                            {chart.rows.map((row, rowIdx) => (
+                            {normalizedRows.map((rowCells, rowIdx) => (
                                 <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                    {row.map((cell, colIdx) => (
+                                    {rowCells.map((cell, colIdx) => (
                                         <td
                                             key={colIdx}
                                             className={`py-3 px-4 font-chakra font-normal ${colIdx === 0
@@ -145,13 +186,21 @@ function SizeChartModal({
                             ))}
                         </tbody>
                     </table>
+
+                    {notes && (
+                        <div className="mt-4 p-3 bg-gray-50 border border-gray-100 flex items-start gap-2">
+                            <Info className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <p className="font-chakra text-[10px] tracking-wider text-gray-500 leading-relaxed">
+                                {notes}
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     products,
     onAddToCart,
@@ -211,7 +260,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <SizeChartModal
                 isOpen={isSizeChartOpen}
                 onClose={() => setIsSizeChartOpen(false)}
-                subCategory={(product as any).subCategory}
+                product={product}
             />
 
             {/* Breadcrumb */}

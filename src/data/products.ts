@@ -25,6 +25,15 @@ export interface Product {
   descriptionCare?: string;
   details?: string[];
   features?: string[];
+  subCategory?: string;
+  sizeGuide?: any;
+  customSizeGuide?: {
+    enabled: boolean;
+    columns?: string[];
+    rows?: any[];
+    unit?: string;
+    measurementNotes?: string;
+  };
 }
 
 export const products: Product[] = [
