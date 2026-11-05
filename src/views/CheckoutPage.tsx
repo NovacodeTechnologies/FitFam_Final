@@ -497,7 +497,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cartItems, onClearCa
                 {(snapshotItems.length > 0 ? snapshotItems : effectiveCartItems).map((item, idx) => (
                   <div key={idx} className="flex justify-between items-center">
                     <span className="font-chakra font-normal text-[12px] text-gray-600 pr-4">
-                      {item.product.name} — {item.size} × {item.quantity}
+                      {item.product.name}{item.color ? ` (${item.color})` : ''} — {item.size} × {item.quantity}
                     </span>
                     <span className="font-chakra font-normal text-[12px] text-[#111111] whitespace-nowrap">
                       රු{((item.product.salePrice !== undefined ? item.product.salePrice : item.product.price) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}

@@ -132,7 +132,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                                                     {product.name}
                                                 </h3>
                                                 <p className="font-chakra text-[11px] uppercase tracking-widest text-[#D4AF37] font-semibold mb-1">
-                                                    {color ? `Color: ${color} ? ` : ''}Size: {size}
+                                                    {color ? `Color: ${color} · ` : ''}Size: {size}
                                                 </p>
                                                 <div className="flex gap-2">
                                                     {product.salePrice !== undefined ? (

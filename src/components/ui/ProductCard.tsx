@@ -7,7 +7,7 @@ import { fixImageUrl } from '../../lib/api';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart?: (product: Product, size?: string) => void;
+  onAddToCart?: (product: Product, size?: string, color?: string) => void;
   onToggleWishlist?: (product: Product) => void;
   onQuickView?: (product: Product) => void;
   isWishlisted?: boolean;
@@ -19,7 +19,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onAddToCart,
   portrait = false,
 }) => {
-  const { name, price, originalPrice, salePrice, image, images, isNew, isSale, badge, sizes } = product;
+  const { name, price, originalPrice, salePrice, image, images, isNew, isSale, badge, sizes, variations, hasVariations } = product;
+
+  // Determine available sizes from sizes array, or aggregate across variations if hasVariations
+  const effectiveSizes: string[] = React.useMemo(() => {
+    if (sizes && sizes.length > 0) return sizes;
+    if (hasVariations && variations && variations.length > 0) {
+      const set = new Set<string>();
+      variations.forEach(v => (v.sizes || []).forEach(s => set.add(s)));
+      if (set.size > 0) return Array.from(set);
+    }
+    return [];
+  }, [sizes, hasVariations, variations]);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   const hoverImage = images && images.length > 1 ? images[1] : null;
@@ -97,15 +108,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Sizes — shown on hover on desktop, always shown on mobile */}
-          {sizes && sizes.length > 0 && (
+          {effectiveSizes.length > 0 && (
             <div className="flex md:hidden md:group-hover:flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap">
-              {sizes.map((size) => (
+              {effectiveSizes.map((size) => (
                 <button
                   key={size}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedSize(size);
-                    onAddToCart?.(product, size);
+                    // If variation product, pick first variation that supports this size
+                    const defaultColor = (hasVariations && variations && variations.length > 0)
+                      ? (variations.find(v => (v.sizes || []).includes(size))?.colorName || variations[0].colorName)
+                      : undefined;
+                    onAddToCart?.(product, size, defaultColor);
                   }}
                   className={`text-[9px] sm:text-[10px] font-chakra font-normal tracking-wider uppercase border px-2 sm:px-2.5 py-0.5 sm:py-1 transition-colors cursor-pointer ${selectedSize === size
                       ? 'bg-black text-white border-black'
