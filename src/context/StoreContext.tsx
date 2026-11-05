@@ -9,6 +9,7 @@ export interface CartItem {
   product: Product;
   quantity: number;
   size: string;
+  color?: string;
 }
 
 export interface ToastMessage {
@@ -27,9 +28,9 @@ interface StoreContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   filteredProducts: Product[];
-  addToCart: (product: Product, size?: string) => void;
-  removeFromCart: (productId: string, size?: string) => void;
-  updateCartQuantity: (productId: string, quantity: number, size?: string) => void;
+  addToCart: (product: Product, size?: string, color?: string) => void;
+  removeFromCart: (productId: string, size?: string, color?: string) => void;
+  updateCartQuantity: (productId: string, quantity: number, size?: string, color?: string) => void;
   toggleWishlist: (product: Product) => void;
   removeFromWishlist: (productId: string) => void;
   clearCart: () => void;
@@ -109,43 +110,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }, 3500);
   };
 
-  const addToCart = (product: Product, size?: string) => {
+  const addToCart = (product: Product, size?: string, color?: string) => {
     const resolvedSize = size ?? product.sizes?.[0] ?? 'ONE SIZE';
+    const resolvedColor = color || (product.hasVariations && product.variations && product.variations.length > 0 ? product.variations[0].colorName : undefined);
     const existing = cartItems.find(
-      (item) => item.product.id === product.id && item.size === resolvedSize
+      (item) => item.product.id === product.id && item.size === resolvedSize && item.color === resolvedColor
     );
+    const itemLabel = resolvedColor ? `${product.name} (${resolvedColor} / ${resolvedSize})` : `${product.name} (${resolvedSize})`;
     if (existing) {
-      showToast(`Increased quantity of ${product.name} (${resolvedSize}) in cart!`, 'cart');
+      showToast(`Increased quantity of ${itemLabel} in cart!`, 'cart');
       setCartItems((prev) =>
         prev.map((item) =>
-          item.product.id === product.id && item.size === resolvedSize
+          item.product.id === product.id && item.size === resolvedSize && item.color === resolvedColor
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       );
     } else {
-      showToast(`${product.name} (${resolvedSize}) added to cart!`, 'cart');
-      setCartItems((prev) => [...prev, { product, quantity: 1, size: resolvedSize }]);
+      showToast(`${itemLabel} added to cart!`, 'cart');
+      setCartItems((prev) => [...prev, { product, quantity: 1, size: resolvedSize, color: resolvedColor }]);
     }
   };
 
-  const removeFromCart = (productId: string, size?: string) => {
-    const product = cartItems.find(
-      (item) => item.product.id === productId && (!size || item.size === size)
-    )?.product;
-    if (product) showToast(`${product.name}${size ? ` (${size})` : ''} removed from cart.`, 'success');
-    setCartItems((prev) =>
-      prev.filter((item) => !(item.product.id === productId && (!size || item.size === size)))
-    );
+  const removeFromCart = (productId: string, size?: string, color?: string) => {
+    const itemMatch = (item: CartItem) =>
+      item.product.id === productId &&
+      (!size || item.size === size) &&
+      (!color || item.color === color);
+    const match = cartItems.find(itemMatch);
+    if (match) {
+      const label = match.color ? `${match.product.name} (${match.color} / ${match.size})` : `${match.product.name}${match.size ? ` (${match.size})` : ''}`;
+      showToast(`${label} removed from cart.`, 'success');
+    }
+    setCartItems((prev) => prev.filter((item) => !itemMatch(item)));
   };
 
-  const updateCartQuantity = (productId: string, quantity: number, size?: string) => {
+  const updateCartQuantity = (productId: string, quantity: number, size?: string, color?: string) => {
     setCartItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId && (!size || item.size === size)
-          ? { ...item, quantity }
-          : item
-      )
+      prev.map((item) => {
+        const matches =
+          item.product.id === productId &&
+          (!size || item.size === size) &&
+          (!color || item.color === color);
+        return matches ? { ...item, quantity } : item;
+      })
     );
   };
 

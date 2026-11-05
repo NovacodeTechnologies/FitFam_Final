@@ -12,12 +12,13 @@ interface CartItem {
     product: Product;
     quantity: number;
     size: string;
+    color?: string;
 }
 
 interface CartPageProps {
     cartItems: CartItem[];
-    onRemoveFromCart: (productId: string, size?: string) => void;
-    onUpdateQuantity: (productId: string, quantity: number, size?: string) => void;
+    onRemoveFromCart: (productId: string, size?: string, color?: string) => void;
+    onUpdateQuantity: (productId: string, quantity: number, size?: string, color?: string) => void;
     onOpenCheckout: () => void;
 }
 
@@ -107,8 +108,8 @@ export const CartPage: React.FC<CartPageProps> = ({
 
                             {/* Items */}
                             <div className="divide-y divide-gray-100">
-                                {cartItems.map(({ product, quantity, size }) => (
-                                    <div key={`${product.id}-${size}`} className="py-6 flex gap-4 items-start">
+                                {cartItems.map(({ product, quantity, size, color }) => (
+                                    <div key={`${product.id}-${size}-${color || 'def'}`} className="py-6 flex gap-4 items-start">
 
                                         {/* Image */}
                                         <div
@@ -131,7 +132,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                                                     {product.name}
                                                 </h3>
                                                 <p className="font-chakra text-[11px] uppercase tracking-widest text-[#D4AF37] font-semibold mb-1">
-                                                    Size: {size}
+                                                    {color ? `Color: ${color} ? ` : ''}Size: {size}
                                                 </p>
                                                 <div className="flex gap-2">
                                                     {product.salePrice !== undefined ? (
@@ -158,8 +159,8 @@ export const CartPage: React.FC<CartPageProps> = ({
                                                 <div className="flex items-center border border-gray-200">
                                                     <button
                                                         onClick={() => {
-                                                            if (quantity > 1) onUpdateQuantity(product.id, quantity - 1, size);
-                                                            else onRemoveFromCart(product.id, size);
+                                                            if (quantity > 1) onUpdateQuantity(product.id, quantity - 1, size, color);
+                                                            else onRemoveFromCart(product.id, size, color);
                                                         }}
                                                         className="w-8 h-8 flex items-center justify-center text-[#555555] hover:bg-gray-50 transition-colors cursor-pointer"
                                                     >
@@ -169,7 +170,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                                                         {quantity}
                                                     </span>
                                                     <button
-                                                        onClick={() => onUpdateQuantity(product.id, quantity + 1, size)}
+                                                        onClick={() => onUpdateQuantity(product.id, quantity + 1, size, color)}
                                                         className="w-8 h-8 flex items-center justify-center text-[#555555] hover:bg-gray-50 transition-colors cursor-pointer"
                                                     >
                                                         <Plus className="w-3 h-3" />

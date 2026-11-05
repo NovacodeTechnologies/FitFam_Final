@@ -1,9 +1,23 @@
+export interface ColorVariation {
+  colorName: string;
+  colorCode?: string;
+  images: string[];
+  sizes: string[];
+  stock: Record<string, number>;
+  sku?: string;
+  price?: number;
+  salePrice?: number;
+  isAvailable?: boolean;
+}
+
 export interface Product {
   id: string;
   _id?: string;
   name: string;
   category: 'Men' | 'Women' | 'Accessories' | string;
   clothingType?: 'Tops' | 'Bottoms' | string;
+  hasVariations?: boolean;
+  variations?: ColorVariation[];
   price: number;
   originalPrice?: number;
   salePrice?: number;

@@ -10,7 +10,7 @@ import { fixImageUrl } from '../lib/api';
 
 interface ProductDetailPageProps {
     products: Product[];
-    onAddToCart: (product: Product, size?: string) => void;
+    onAddToCart: (product: Product, size?: string, color?: string) => void;
     onToggleWishlist: (product: Product) => void;
     wishlistItems: Product[];
 }
@@ -213,16 +213,38 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
     const product = products.find((p) => p.id === id);
 
+    // Phase 3: Variations state
+    const hasVariations = Boolean(product?.hasVariations && product?.variations && product.variations.length > 0);
+    const availableVariations = hasVariations ? product!.variations!.filter(v => v.isAvailable !== false) : [];
+    const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0);
+
+    const currentVariation = hasVariations && availableVariations.length > 0
+        ? (availableVariations[selectedColorIndex] || availableVariations[0])
+        : null;
+
+    const availableSizes = currentVariation
+        ? (currentVariation.sizes && currentVariation.sizes.length > 0 ? currentVariation.sizes : ['XS', 'S', 'M', 'L', 'XL', 'XXL'])
+        : (product?.sizes && product.sizes.length > 0 ? product.sizes : ['XS', 'S', 'M', 'L', 'XL', 'XXL']);
+
     const [selectedSize, setSelectedSize] = useState<string>(
-        product?.sizes?.[0] ?? 'M'
-    ); const [activeTab, setActiveTab] = useState<Tab>('description');
+        availableSizes[0] ?? 'M'
+    );
+    const [activeTab, setActiveTab] = useState<Tab>('description');
     const [qty, setQty] = useState(1);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
+    // Sync selected size if available sizes change on variation switch
+    useEffect(() => {
+        if (availableSizes.length > 0 && !availableSizes.includes(selectedSize)) {
+            setSelectedSize(availableSizes[0]);
+        }
+    }, [selectedColorIndex, availableSizes, selectedSize]);
+
     useEffect(() => {
         window.scrollTo(0, 0);
         setActiveImageIndex(0);
+        setSelectedColorIndex(0);
     }, [id]);
 
     if (!product) {
@@ -249,9 +271,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         .filter((p) => p.id !== product.id && p.category === product.category)
         .slice(0, 4);
 
-    const allImages = (product.images && product.images.length > 0)
-        ? product.images
-        : [product.image];
+    // If variation has images, use variation images (ASRV-style color switching)
+    const allImages = (currentVariation && currentVariation.images && currentVariation.images.length > 0)
+        ? currentVariation.images
+        : (product.images && product.images.length > 0)
+            ? product.images
+            : [product.image];
 
     return (
         <div className="min-h-screen bg-white">
@@ -340,35 +365,95 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                             </h1>
 
                             {/* Color Label */}
-                            <p className="font-chakra text-[11px] uppercase tracking-widest text-gray-500 mt-1">
-                                BLACK
-                            </p>
-                        </div>
-
-                        {/* Price */}
-                        <div className="flex items-baseline gap-3">
-                            {product.salePrice !== undefined && product.salePrice < product.price ? (
-                                <>
-                                    <span className="font-chakra text-lg text-[#E5003B] font-semibold">
-                                        Rs {product.salePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
-                                    </span>
-                                    <span className="font-chakra text-sm text-gray-400 line-through">
-                                        Rs {product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
-                                    </span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="font-chakra text-lg text-[#111111]">
-                                        Rs {product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
-                                    </span>
-                                    {product.originalPrice && product.originalPrice > product.price && (
-                                        <span className="font-chakra text-sm text-gray-400 line-through">
-                                            Rs {product.originalPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
-                                        </span>
+                            {currentVariation ? (
+                                <p className="font-chakra text-[11px] uppercase tracking-widest text-gray-700 mt-1 font-semibold flex items-center gap-2">
+                                    <span>COLOR: {currentVariation.colorName}</span>
+                                    {currentVariation.sku && (
+                                        <span className="text-[9px] text-gray-400 font-normal">SKU: {currentVariation.sku}</span>
                                     )}
-                                </>
+                                </p>
+                            ) : (
+                                <p className="font-chakra text-[11px] uppercase tracking-widest text-gray-500 mt-1">
+                                    {product.category}
+                                </p>
                             )}
                         </div>
+
+                        {/* Price (Variation-aware) */}
+                        <div className="flex items-baseline gap-3">
+                            {(() => {
+                                const effectivePrice = currentVariation?.price ?? product.price;
+                                const effectiveSale = currentVariation?.salePrice ?? product.salePrice;
+                                if (effectiveSale !== undefined && effectiveSale < effectivePrice) {
+                                    return (
+                                        <>
+                                            <span className="font-chakra text-lg text-[#E5003B] font-semibold">
+                                                Rs {effectiveSale.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
+                                            </span>
+                                            <span className="font-chakra text-sm text-gray-400 line-through">
+                                                Rs {effectivePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
+                                            </span>
+                                        </>
+                                    );
+                                }
+                                return (
+                                    <>
+                                        <span className="font-chakra text-lg text-[#111111]">
+                                            Rs {effectivePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
+                                        </span>
+                                        {product.originalPrice && product.originalPrice > effectivePrice && (
+                                            <span className="font-chakra text-sm text-gray-400 line-through">
+                                                Rs {product.originalPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} LKR
+                                            </span>
+                                        )}
+                                    </>
+                                );
+                            })()}
+                        </div>
+
+                        {/* Phase 3: Color Swatches Selector (ASRV-style) */}
+                        {hasVariations && availableVariations.length > 0 && (
+                            <div className="space-y-2 pt-1 border-t border-gray-100">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-chakra text-[11px] uppercase tracking-widest text-gray-500">
+                                        Color: <strong className="text-black">{currentVariation?.colorName}</strong>
+                                    </span>
+                                    <span className="text-[10px] text-gray-400 tracking-wider font-chakra">
+                                        {availableVariations.length} {availableVariations.length === 1 ? 'color' : 'colors'} available
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2.5 items-center">
+                                    {availableVariations.map((v, idx) => {
+                                        const isSelected = idx === selectedColorIndex;
+                                        return (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedColorIndex(idx);
+                                                    setActiveImageIndex(0);
+                                                }}
+                                                className={`group relative flex items-center gap-2 px-3 py-2 border transition-all cursor-pointer ${
+                                                    isSelected
+                                                        ? 'border-black bg-black text-white ring-1 ring-black'
+                                                        : 'border-gray-200 bg-white text-gray-800 hover:border-gray-400'
+                                                }`}
+                                                title={v.colorName}
+                                            >
+                                                {/* Color circle or swatch */}
+                                                <span
+                                                    className="w-3.5 h-3.5 rounded-full border border-gray-300 shadow-sm flex-shrink-0"
+                                                    style={{ backgroundColor: v.colorCode || '#222222' }}
+                                                />
+                                                <span className="font-chakra text-[11px] uppercase tracking-wider font-semibold">
+                                                    {v.colorName}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Size Selection */}
                         <div className="space-y-3">
@@ -386,21 +471,32 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                             </div>
 
                             <div className="grid grid-cols-5 gap-2">
-                                {(product.sizes && product.sizes.length > 0
-                                    ? product.sizes
-                                    : ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-                                ).map((size) => (
-                                    <button
-                                        key={size}
-                                        onClick={() => setSelectedSize(size)}
-                                        className={`h-11 border font-chakra text-[11px] uppercase tracking-wider transition-all duration-200 cursor-pointer ${selectedSize === size
-                                            ? 'bg-white text-[#111111] border-[#111111] font-semibold ring-1 ring-[#111111]'
-                                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                                {availableSizes.map((size) => {
+                                    const stockMap = currentVariation?.stock || product.stock || {};
+                                    const sizeStock = stockMap[size];
+                                    const isOutOfStock = sizeStock !== undefined && sizeStock <= 0;
+                                    return (
+                                        <button
+                                            key={size}
+                                            disabled={isOutOfStock}
+                                            onClick={() => !isOutOfStock && setSelectedSize(size)}
+                                            className={`relative h-11 border font-chakra text-[11px] uppercase tracking-wider transition-all duration-200 ${
+                                                isOutOfStock
+                                                    ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed line-through'
+                                                    : selectedSize === size
+                                                        ? 'bg-white text-[#111111] border-[#111111] font-semibold ring-1 ring-[#111111] cursor-pointer'
+                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 cursor-pointer'
                                             }`}
-                                    >
-                                        {size}
-                                    </button>
-                                ))}
+                                        >
+                                            {size}
+                                            {isOutOfStock && (
+                                                <span className="absolute -top-1.5 -right-1.5 text-[8px] bg-gray-400 text-white px-1 rounded font-normal">
+                                                    OUT
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -408,11 +504,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         <div className="flex flex-col gap-3 pt-2">
                             <button
                                 onClick={() => {
-                                    for (let i = 0; i < qty; i++) onAddToCart(product, selectedSize);
+                                    const colorToPass = currentVariation?.colorName;
+                                    for (let i = 0; i < qty; i++) onAddToCart(product, selectedSize, colorToPass);
                                 }}
                                 className="w-full h-12 bg-[#262626] hover:bg-black text-white font-chakra text-[11px] uppercase tracking-[0.25em] transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
                             >
-                                Add To Cart
+                                Add To Cart {currentVariation ? `(${currentVariation.colorName})` : ''}
                             </button>
 
                             {/* Buy Now — skips cart, goes straight to checkout */}

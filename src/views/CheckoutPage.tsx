@@ -11,6 +11,7 @@ interface CartItem {
   product: Product;
   quantity: number;
   size: string;
+  color?: string;
 }
 
 interface CheckoutPageProps {
@@ -187,6 +188,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cartItems, onClearCa
           orderRef,
           productId: item.product.id,
           size: item.size,
+          color: item.color,
           qty: item.quantity,
         });
       }
