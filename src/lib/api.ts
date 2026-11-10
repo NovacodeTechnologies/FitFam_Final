@@ -3,7 +3,7 @@ import axios from "axios";
 const rawBase =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   (typeof process !== "undefined" && process.env?.VITE_BACKEND_URL) ||
-  "https://dsc-vitamins-boot-employers.trycloudflare.com";
+  "https://api.fitfamactive.com";
 
 const BASE_URL = rawBase.replace(/\/+$/, "");
 
