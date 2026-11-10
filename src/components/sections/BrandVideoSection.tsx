@@ -5,7 +5,7 @@ import React, { useRef, useState } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { Button } from '../ui/Button';
 // @ts-ignore
-const brandVideo = "/assets/brand-video.mp4";
+const brandVideo = "https://res.cloudinary.com/yn95hsyi/video/upload/q_auto/v1794299341/brand-video.mp4";
 
 export const BrandVideoSection: React.FC = () => {
   const router = useRouter();
