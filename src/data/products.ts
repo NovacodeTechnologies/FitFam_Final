@@ -1,6 +1,7 @@
 export interface ColorVariation {
   colorName: string;
   colorCode?: string;
+  colorHex?: string;
   images: string[];
   sizes: string[];
   stock: Record<string, number>;

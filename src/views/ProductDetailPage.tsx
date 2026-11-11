@@ -271,12 +271,32 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         .filter((p) => p.id !== product.id && p.category === product.category)
         .slice(0, 4);
 
-    // If variation has images, use variation images (ASRV-style color switching)
-    const allImages = (currentVariation && currentVariation.images && currentVariation.images.length > 0)
+    // Collect all available images for this product (from base images + all variation images)
+    const allProductImages = React.useMemo(() => {
+        const list: string[] = [];
+        const seen = new Set<string>();
+        const add = (img?: string) => {
+            if (img && !seen.has(img)) {
+                seen.add(img);
+                list.push(img);
+            }
+        };
+        (product?.images || []).forEach(add);
+        if (product?.image) add(product.image);
+        availableVariations.forEach(v => {
+            (v.images || []).forEach(add);
+        });
+        return list;
+    }, [product, availableVariations]);
+
+    // If variation has multiple images of its own (e.g. front & back of that specific color), use them.
+    // Otherwise show all product images so all colors/images remain visible in the left thumbnail strip.
+    const variationImages = (currentVariation && currentVariation.images && currentVariation.images.length > 0)
         ? currentVariation.images
-        : (product.images && product.images.length > 0)
-            ? product.images
-            : [product.image];
+        : [];
+    const allImages = (variationImages.length > 1)
+        ? variationImages
+        : (allProductImages.length > 0 ? allProductImages : (product?.image ? [product.image] : []));
 
     return (
         <div className="min-h-screen bg-white">
@@ -319,7 +339,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                                 {allImages.map((img, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => setActiveImageIndex(i)}
+                                        onClick={() => {
+                                            setActiveImageIndex(i);
+                                            const clickedImg = allImages[i];
+                                            const matchedVarIdx = availableVariations.findIndex(v => (v.images || []).includes(clickedImg));
+                                            if (matchedVarIdx !== -1 && matchedVarIdx !== selectedColorIndex) {
+                                                setSelectedColorIndex(matchedVarIdx);
+                                            }
+                                        }}
                                         className={`relative flex-shrink-0 w-16 h-20 md:w-20 md:h-24 bg-gray-50 border transition-all cursor-pointer overflow-hidden ${i === activeImageIndex
                                             ? 'border-black ring-1 ring-black'
                                             : 'border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100'
@@ -341,7 +368,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         <div className="relative flex-1 aspect-[3/4] bg-[#f8f8f8] overflow-hidden">
                             <img
                                 key={activeImageIndex}
-                                src={fixImageUrl(allImages[activeImageIndex], 1200)}
+                                src={fixImageUrl(allImages[activeImageIndex] || allImages[0] || product.image, 1200)}
                                 alt={`${product.name} - image ${activeImageIndex + 1}`}
                                 className="w-full h-full object-cover object-center transition-opacity duration-300"
                                 decoding="async"
@@ -431,7 +458,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                                                 type="button"
                                                 onClick={() => {
                                                     setSelectedColorIndex(idx);
-                                                    setActiveImageIndex(0);
+                                                    const targetVar = availableVariations[idx];
+                                                    if (targetVar?.images && targetVar.images.length > 0) {
+                                                        const targetImg = targetVar.images[0];
+                                                        const found = allImages.indexOf(targetImg);
+                                                        setActiveImageIndex(found !== -1 ? found : 0);
+                                                    } else {
+                                                        const colorLower = (targetVar?.colorName || '').toLowerCase().trim();
+                                                        const found = colorLower ? allImages.findIndex(img => img.toLowerCase().includes(colorLower)) : -1;
+                                                        setActiveImageIndex(found !== -1 ? found : 0);
+                                                    }
                                                 }}
                                                 className={`group relative flex items-center gap-2 px-3 py-2 border transition-all cursor-pointer ${
                                                     isSelected
@@ -443,7 +479,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                                                 {/* Color circle or swatch */}
                                                 <span
                                                     className="w-3.5 h-3.5 rounded-full border border-gray-300 shadow-sm flex-shrink-0"
-                                                    style={{ backgroundColor: v.colorCode || '#222222' }}
+                                                    style={{ backgroundColor: (v as any).colorHex || v.colorCode || '#222222' }}
                                                 />
                                                 <span className="font-chakra text-[11px] uppercase tracking-wider font-semibold">
                                                     {v.colorName}

@@ -72,7 +72,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           id: p._id || p.id,
           isNewProduct: p.isNewProduct,
           image: fixImageUrl(p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/600'),
-          images: (p.images || []).map(fixImageUrl),
+          images: (p.images || []).map((img: string) => fixImageUrl(img, 800)),
+          variations: (p.variations || []).map((v: any) => ({
+            ...v,
+            colorCode: v.colorCode || v.colorHex,
+            colorHex: v.colorHex || v.colorCode,
+            images: (v.images || []).map((img: string) => fixImageUrl(img, 800)),
+          })),
         }));
         setProducts(mapped);
       } catch (err) {
