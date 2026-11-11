@@ -72,9 +72,23 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cartItems, onClearCa
   const pathname = usePathname();
 
   // If navigated here via "Buy Now", use those items instead of the real cart
-  const buyNowItems: CartItem[] | undefined = (null as any)?.buyNowItems;
+  const [buyNowItems, setBuyNowItems] = React.useState<CartItem[] | null>(null);
   const isBuyNow = !!(buyNowItems && buyNowItems.length > 0);
   const effectiveCartItems = isBuyNow ? buyNowItems! : cartItems;
+
+  // Read the buy-now item from localStorage once on mount (and clear it)
+  React.useEffect(() => {
+    const raw = localStorage.getItem('fitfam_buy_now');
+    if (raw) {
+      try {
+        const item: CartItem = JSON.parse(raw);
+        setBuyNowItems([item]);
+      } catch {
+        // malformed — ignore and fall back to cart
+      }
+      localStorage.removeItem('fitfam_buy_now');
+    }
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });

@@ -551,6 +551,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                             {/* Buy Now — skips cart, goes straight to checkout */}
                             <button
                                 onClick={() => {
+                                    if (!product) return;
+                                    const colorToPass = currentVariation?.colorName;
+                                    const buyNowItem = {
+                                        product,
+                                        quantity: qty,
+                                        size: selectedSize,
+                                        ...(colorToPass ? { color: colorToPass } : {}),
+                                    };
+                                    localStorage.setItem('fitfam_buy_now', JSON.stringify(buyNowItem));
                                     router.push('/checkout');
                                 }}
                                 className="w-full h-12 bg-white border-2 border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white font-chakra text-[11px] uppercase tracking-[0.25em] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 group"
