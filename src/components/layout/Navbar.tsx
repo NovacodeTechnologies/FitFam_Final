@@ -76,14 +76,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         onMouseLeave={() => { setIsHovered(false); setOpenMenu(null); }}
         className="fixed top-0 left-0 w-full z-40 flex flex-col"
       >
-        {/* ============================================================== */}
-        {/* SITE MAINTENANCE BANNER (Comment / uncomment block as needed)  */}
-        {/* ============================================================== */}
+        {/* ============================================================== 
+            SITE MAINTENANCE BANNER (Comment / uncomment block as needed)  
+            ============================================================== 
         <MaintenanceBanner
           message="SYSTEM MAINTENANCE IN PROGRESS — OUR SERVICES ARE CURRENTLY UNDERGOING SCHEDULED UPGRADES."
           subtext="Ordering & some features may be temporarily limited. We appreciate your patience!"
         />
-        {/* ============================================================== */}
+            ============================================================== */}
 
         <div className={`w-full transition-all duration-500 ${isOpaque ? 'bg-white shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
           <div className="w-full px-4 md:px-6 lg:px-10 flex items-center h-16 relative">
