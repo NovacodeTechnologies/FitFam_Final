@@ -10,6 +10,7 @@ import { fixImageUrl } from '../lib/api';
 
 interface ProductDetailPageProps {
     products: Product[];
+    isLoadingProducts?: boolean;
     onAddToCart: (product: Product, size?: string, color?: string) => void;
     onToggleWishlist: (product: Product) => void;
     wishlistItems: Product[];
@@ -203,6 +204,7 @@ function SizeChartModal({
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     products,
+    isLoadingProducts = false,
     onAddToCart,
     onToggleWishlist,
     wishlistItems,
@@ -247,31 +249,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         setSelectedColorIndex(0);
     }, [id]);
 
-    if (!product) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center px-4">
-                <h1 className="font-chakra font-normal text-[#111111] text-2xl uppercase tracking-[0.3em]">
-                    Product Not Found
-                </h1>
-                <p className="font-chakra font-normal text-sm text-gray-400 tracking-wide">
-                    The product you're looking for doesn't exist.
-                </p>
-                <button
-                    onClick={() => router.push('/')}
-                    className="mt-4 border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white font-chakra font-normal text-[10px] uppercase tracking-[0.3em] px-8 py-3 transition-all duration-300 cursor-pointer"
-                >
-                    Back to Home
-                </button>
-            </div>
-        );
-    }
-
-    const isWishlisted = wishlistItems.some((w) => w.id === product.id);
+    const isWishlisted = wishlistItems.some((w) => w.id === product?.id);
     const related = products
-        .filter((p) => p.id !== product.id && p.category === product.category)
+        .filter((p) => p.id !== product?.id && p.category === product?.category)
         .slice(0, 4);
 
     // Collect all available images for this product (from base images + all variation images)
+    // useMemo must be called unconditionally — before any early returns
     const allProductImages = React.useMemo(() => {
         const list: string[] = [];
         const seen = new Set<string>();
@@ -289,14 +273,84 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         return list;
     }, [product, availableVariations]);
 
-    // If variation has multiple images of its own (e.g. front & back of that specific color), use them.
-    // Otherwise show all product images so all colors/images remain visible in the left thumbnail strip.
     const variationImages = (currentVariation && currentVariation.images && currentVariation.images.length > 0)
         ? currentVariation.images
         : [];
     const allImages = (variationImages.length > 1)
         ? variationImages
         : (allProductImages.length > 0 ? allProductImages : (product?.image ? [product.image] : []));
+
+    // ── Early returns AFTER all hooks ──────────────────────────────────────
+    if (!product) {
+        // Still fetching from the API — show a skeleton so we never flash "Not Found"
+        if (isLoadingProducts) {
+            return (
+                <div className="min-h-screen bg-white">
+                    {/* Breadcrumb skeleton */}
+                    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-2">
+                            <div className="h-3 w-10 bg-gray-200 animate-pulse rounded" />
+                            <div className="h-3 w-3 bg-gray-100 animate-pulse rounded" />
+                            <div className="h-3 w-16 bg-gray-200 animate-pulse rounded" />
+                            <div className="h-3 w-3 bg-gray-100 animate-pulse rounded" />
+                            <div className="h-3 w-32 bg-gray-200 animate-pulse rounded" />
+                        </div>
+                    </div>
+
+                    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pb-16">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+                            {/* Image skeleton */}
+                            <div className="lg:col-span-7">
+                                <div className="aspect-[3/4] bg-gray-200 animate-pulse w-full rounded-sm" />
+                                <div className="flex gap-2 mt-3">
+                                    {[...Array(4)].map((_, i) => (
+                                        <div key={i} className="w-16 h-20 bg-gray-200 animate-pulse rounded-sm" />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Details skeleton */}
+                            <div className="lg:col-span-5 flex flex-col gap-5 pt-2">
+                                <div className="h-7 w-3/4 bg-gray-200 animate-pulse rounded" />
+                                <div className="h-4 w-1/4 bg-gray-100 animate-pulse rounded" />
+                                <div className="h-6 w-1/3 bg-gray-200 animate-pulse rounded" />
+
+                                {/* Size buttons skeleton */}
+                                <div className="grid grid-cols-5 gap-2 pt-2">
+                                    {['XS', 'S', 'M', 'L', 'XL'].map((s) => (
+                                        <div key={s} className="h-11 bg-gray-100 animate-pulse rounded-sm" />
+                                    ))}
+                                </div>
+
+                                {/* Button skeletons */}
+                                <div className="flex flex-col gap-3 pt-2">
+                                    <div className="h-12 bg-gray-200 animate-pulse rounded-sm" />
+                                    <div className="h-12 bg-gray-100 animate-pulse rounded-sm" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center px-4">
+                <h1 className="font-chakra font-normal text-[#111111] text-2xl uppercase tracking-[0.3em]">
+                    Product Not Found
+                </h1>
+                <p className="font-chakra font-normal text-sm text-gray-400 tracking-wide">
+                    The product you're looking for doesn't exist.
+                </p>
+                <button
+                    onClick={() => router.push('/')}
+                    className="mt-4 border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white font-chakra font-normal text-[10px] uppercase tracking-[0.3em] px-8 py-3 transition-all duration-300 cursor-pointer"
+                >
+                    Back to Home
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white">

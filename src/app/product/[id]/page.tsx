@@ -6,6 +6,7 @@ import { ProductDetailPage } from '@/views/ProductDetailPage';
 export default function Page() {
   const {
     products,
+    isLoadingProducts,
     addToCart,
     toggleWishlist,
     wishlistItems,
@@ -14,6 +15,7 @@ export default function Page() {
   return (
     <ProductDetailPage
       products={products}
+      isLoadingProducts={isLoadingProducts}
       onAddToCart={addToCart}
       onToggleWishlist={toggleWishlist}
       wishlistItems={wishlistItems}
